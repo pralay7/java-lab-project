@@ -15,8 +15,13 @@ public class DatabaseConnection {
 
     private DatabaseConnection() {
         try {
+            // Explicitly load the SQLite JDBC driver
+            Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection(DATABASE_URL);
             initializeDatabase();
+        } catch (ClassNotFoundException e) {
+            System.err.println("SQLite JDBC driver not found! Ensure it is included in your project's classpath.");
+            throw new RuntimeException(e);
         } catch (SQLException e) {
             System.err.println("Unable to connect to the database: " + e.getMessage());
             throw new RuntimeException(e);
