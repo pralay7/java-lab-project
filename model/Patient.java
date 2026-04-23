@@ -1,5 +1,8 @@
 package model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * POJO representing a patient in the system.
  */
@@ -10,8 +13,10 @@ public class Patient {
     private String gender;
     private String contactNumber;
     private String medicalHistory;
+    private List<Doctor> doctorList;
 
     public Patient() {
+        this.doctorList = new ArrayList<>();
     }
 
     public Patient(String name, Integer age, String gender, String contactNumber, String medicalHistory) {
@@ -20,6 +25,7 @@ public class Patient {
         this.gender = gender;
         this.contactNumber = contactNumber;
         this.medicalHistory = medicalHistory;
+        this.doctorList = new ArrayList<>();
     }
 
     public Patient(Integer id, String name, Integer age, String gender, String contactNumber, String medicalHistory) {
@@ -29,6 +35,7 @@ public class Patient {
         this.gender = gender;
         this.contactNumber = contactNumber;
         this.medicalHistory = medicalHistory;
+        this.doctorList = new ArrayList<>();
     }
 
     public Integer getId() {
@@ -79,10 +86,38 @@ public class Patient {
         this.medicalHistory = medicalHistory;
     }
 
+    public List<Doctor> getDoctorList() {
+        return doctorList;
+    }
+
+    public void setDoctorList(List<Doctor> doctorList) {
+        this.doctorList = doctorList;
+    }
+
+    public void addDoctor(Doctor doctor) {
+        if (!this.doctorList.contains(doctor)) {
+            this.doctorList.add(doctor);
+        }
+    }
+
+    public void removeDoctor(Doctor doctor) {
+        this.doctorList.remove(doctor);
+    }
+
+    public boolean hasDoctors() {
+        return !this.doctorList.isEmpty();
+    }
+
     @Override
     public String toString() {
+        String doctorInfo = this.doctorList.isEmpty() ? "to be assigned" : 
+                           this.doctorList.stream()
+                                   .map(d -> d.getName() + " (" + d.getSpecialty() + ")")
+                                   .reduce((a, b) -> a + ", " + b)
+                                   .orElse("to be assigned");
+        
         return String.format(
-                "ID: %d | Name: %s | Age: %d | Gender: %s | Contact: %s | Medical History: %s",
-                id, name, age, gender, contactNumber, medicalHistory == null ? "None" : medicalHistory);
+                "ID: %d | Name: %s | Age: %d | Gender: %s | Contact: %s | Medical History: %s | Doctors: %s",
+                id, name, age, gender, contactNumber, medicalHistory == null ? "None" : medicalHistory, doctorInfo);
     }
 }

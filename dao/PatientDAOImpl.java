@@ -1,6 +1,7 @@
 package dao;
 
 import model.Patient;
+import model.Doctor;
 import util.DatabaseConnection;
 
 import java.sql.Connection;
@@ -44,7 +45,9 @@ public class PatientDAOImpl implements PatientDAO {
             ResultSet resultSet = preparedStatement.executeQuery();
 
             if (resultSet.next()) {
-                return mapResultSetToPatient(resultSet);
+                Patient patient = mapResultSetToPatient(resultSet);
+                loadDoctors(patient);
+                return patient;
             }
         } catch (SQLException e) {
             System.err.println("Error fetching patient by ID: " + e.getMessage());
@@ -60,7 +63,9 @@ public class PatientDAOImpl implements PatientDAO {
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
-                patients.add(mapResultSetToPatient(resultSet));
+                Patient patient = mapResultSetToPatient(resultSet);
+                loadDoctors(patient);
+                patients.add(patient);
             }
         } catch (SQLException e) {
             System.err.println("Error fetching all patients: " + e.getMessage());
@@ -106,5 +111,51 @@ public class PatientDAOImpl implements PatientDAO {
                 resultSet.getString("contactNumber"),
                 resultSet.getString("medicalHistory")
         );
+    }
+
+    private void loadDoctors(Patient patient) {
+        String sql = "SELECT d.* FROM doctors d " +
+                     "JOIN patient_doctors pd ON d.id = pd.doctorId " +
+                     "WHERE pd.patientId = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setInt(1, patient.getId());
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Doctor doctor = new Doctor(
+                        resultSet.getInt("id"),
+                        resultSet.getString("name"),
+                        resultSet.getString("degree"),
+                        resultSet.getString("specialty"),
+                        resultSet.getString("contactNumber")
+                );
+                patient.addDoctor(doctor);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading doctors for patient: " + e.getMessage());
+        }
+    }
+
+    public boolean assignDoctorToPatient(int patientId, int doctorId) {
+        String sql = "INSERT OR IGNORE INTO patient_doctors(patientId, doctorId) VALUES (?, ?)";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setInt(1, patientId);
+            preparedStatement.setInt(2, doctorId);
+            return preparedStatement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error assigning doctor to patient: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean removeDoctorFromPatient(int patientId, int doctorId) {
+        String sql = "DELETE FROM patient_doctors WHERE patientId = ? AND doctorId = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setInt(1, patientId);
+            preparedStatement.setInt(2, doctorId);
+            return preparedStatement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error removing doctor from patient: " + e.getMessage());
+            return false;
+        }
     }
 }
